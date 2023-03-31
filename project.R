@@ -1,4 +1,4 @@
-### Forecasting Electicity price ###
+### Forecasting Electicity price ####
 
 data <- read.table('ml_data.csv',header = T, sep=",")
 
