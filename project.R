@@ -3,6 +3,7 @@
 library(ggplot2)
 library(GGally)
 library(tidyverse)
+library(patchwork)
 library(lubridate, warn.conflicts = FALSE)
 library(dplyr)
 
@@ -25,9 +26,13 @@ p + geom_line()
 #Swiss_import
 
 x11()
-p <- ggplot(data,aes(x=dates,y=Swiss_import))
-p + geom_line()
+q <- ggplot(data,aes(x=dates,y=Swiss_import))
+p + q + geom_line()
 
+x11()
+h <- ggplot(data, aes(x=dates)) +  geom_line( aes(y=dam), color="blue") + geom_line( aes(y=gas_price),size = 1, color="green") + scale_y_continuous (name = "dam",sec.axis = sec_axis(~.*1, name="Gas Price"))
+h
+    
 # gas price
 
 x11()
@@ -46,7 +51,9 @@ x11()
 p <- ggplot(data,aes(x=dates,y=Forecasted_load)) ### almost the same in the years
 p + geom_line()
 
-
+x11()
+h <- ggplot(data, aes(x=dates)) +  geom_line( aes(y=dam), color="blue") + geom_line( aes(y=Forecasted_load), color="red") + scale_y_continuous (name = "dam",sec.axis = sec_axis(~.*1, name="Gas Price"))
+h
 
 
 
@@ -63,9 +70,6 @@ summary(data.18.19)
 
 data.18.19 <- data[,-1]
 
-x11()
-boxplot(data1, col='gold')
-
 #### TODO: check if there is statistical difference between any energy source measured at 9 and 10 
 #### from the boxplot it does not seem
 
@@ -79,7 +83,7 @@ x11()
 boxplot(scale (x=data.18.19[,2:10],center=T,scale=F),las=2,col="gold")
 
 x11()
-boxplot(scale (data.18.19,center=T,scale=F),las=2,col="gold")
+boxplot(scale (data.18.19[,15:26],center=T,scale=F),las=2,col="gold")
 
 #standardize the dataset
 data.sd <- scale(data.18.19)
@@ -98,8 +102,9 @@ load.data2.sd
 
 #covariate da togliere
 
-vector = c(11, 12, 13, 20, 21, 22, 23, 24, 25, 28) #tolte categoriche e ore 9
+vector = c(1,2,3,4,5,6,7,8,9,10,11, 12, 13, 20, 21, 22, 23, 24, 25, 28) #tolte categoriche e ore 9
 data2 <- data.18.19[, -vector]
+summary(data2)
 
 #standardize the dataset
 data2.sd <- scale(data2)
@@ -119,3 +124,19 @@ for (i in 1:3)
   barplot(load.data2.sd[,i], ylim = c(-1,1), main=paste('Loadings PC'), i)
 graphics.off()
 ### This PCA is a shit!!!
+
+data.18.19 <- data[which(data$X<2020),]
+data.18.19 <- data.18.19[,-1]
+attach(data.18.19)
+
+cov <- names(data.18.19)
+
+regression <- lm(dam ~ gas_price + valley + peak + wind9 + thermal9 + self.consumption9 + pv9 + hydro9 + geothermal9 + Forecasted_load)
+regression
+
+summary(regression)
+
+coef(regression)
+vcov(regression)
+residuals(regression)
+fitted(regression)
