@@ -1,4 +1,4 @@
-### Forecasting Electricity price ####
+### Forecasting Electricity price ###
 
 library(ggplot2)
 library(GGally)
