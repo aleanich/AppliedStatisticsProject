@@ -64,7 +64,7 @@ h
 
 ## Split the dataset: we consider only data from 2018 and 2019
 
-data.18.19 <- data[which(data$X>=2019),]
+data.18.19 <- data[which(data$date>=2019),]
 
 summary(data.18.19)
 
