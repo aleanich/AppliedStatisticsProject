@@ -6,27 +6,28 @@ import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import IPython
+import IPython.display
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
-df = pd.read_csv("AppliedStatisticsProject\ml_data.csv")
+df = pd.read_csv("ml_data.csv")
 
 df["date"] = pd.to_datetime(df["date"]) # Converting into datetime format
 end_date = pd.to_datetime("2020-01-01") 
 df = df[df["date"] <= end_date] # Extracting the portion of data from 2018 to 2019 (inlcluded)
 date_time = pd.to_datetime(df.pop('date'), format='%Y.%m.%d %H:%M:%S')
 
-# print(df.head())
+print(df.head())
 
 # Printing the price overtime
-# plot_cols = ['dam']
-# plot_features = df[plot_cols]
-# plot_features.index = date_time
-# plot_features.plot
-# plt.plot(plot_features)
-# plt.show()
-# print(df.describe().transpose())
+plot_cols = ['dam']
+plot_features = df[plot_cols]
+plot_features.index = date_time
+plot_features.plot
+plt.plot(plot_features)
+plt.show()
+print(df.describe().transpose())
 
 # Emphasizing the periodicity of the date
 timestamp_s = date_time.map(pd.Timestamp.timestamp)
@@ -108,7 +109,6 @@ class WindowGenerator():
     self.shift = shift
 
     self.total_window_size = input_width + shift
-
     self.input_slice = slice(0, input_width)
     self.input_indices = np.arange(self.total_window_size)[self.input_slice]
 
@@ -146,7 +146,7 @@ WindowGenerator.split_window = split_window
 ## Defining a plot method to visualize the windows
 
 def plot(self, model=None, plot_col='dam', max_subplots=3):
-  inputs, labels = self.example
+  inputs, labels = self.examplejbjjk
   plt.figure(figsize=(12, 8))
   plot_col_index = self.column_indices[plot_col]
   max_n = min(max_subplots, len(inputs))
@@ -239,7 +239,7 @@ WindowGenerator.val = val
 WindowGenerator.test = test
 WindowGenerator.example = example
 
-################# SINGLE STEP METHOD #################
+################# SINGLE STEP METHODS #################
 
 # Creating the Baseline (this predictor gives in outp put just the energy price in the previous observation)
 
@@ -276,8 +276,8 @@ wide_window = WindowGenerator(
 print('Input shape:', wide_window.example[0].shape)
 print('Output shape:', baseline(wide_window.example[0]).shape)
 
-wide_window.plot(baseline)
-plt.show()
+# wide_window.plot(baseline)
+# plt.show()
 
 # Building the linear model
 
@@ -300,14 +300,85 @@ def compile_and_fit(model, window, patience=2):
                       callbacks=[early_stopping])
   return history
 
-history = compile_and_fit(linear, single_step_window)
+# history = compile_and_fit(linear, single_step_window)
 
-val_performance['Linear'] = linear.evaluate(single_step_window.val)
-performance['Linear'] = linear.evaluate(single_step_window.test, verbose=0)
+# val_performance['Linear'] = linear.evaluate(single_step_window.val)
+# performance['Linear'] = linear.evaluate(single_step_window.test, verbose=0)
 
-wide_window.plot(linear)
-plt.show()
+# wide_window.plot(linear)
+# plt.show()
 
+# plt.bar(x = range(len(train_df.columns)),
+#         height=linear.layers[0].kernel[:,0].numpy())
+# axis = plt.gca()
+# axis.set_xticks(range(len(train_df.columns)))
+# _ = axis.set_xticklabels(train_df.columns, rotation=90)
+# plt.show()
 
+CONV_WIDTH = 3
+conv_window = WindowGenerator(
+    input_width=CONV_WIDTH,
+    label_width=1,
+    shift=1,
+    label_columns=['dam'])
 
+# multi_step_dense = tf.keras.Sequential([
+#     # Shape: (time, features) => (time*features)
+#     tf.keras.layers.Flatten(),
+#     tf.keras.layers.Dense(units=32, activation='relu'),
+#     tf.keras.layers.Dense(units=32, activation='relu'),
+#     tf.keras.layers.Dense(units=1),
+#     # Add back the time dimension.
+#     # Shape: (outputs) => (1, outputs)
+#     tf.keras.layers.Reshape([1, -1]),
+# ])
 
+# history = compile_and_fit(multi_step_dense, conv_window)
+
+# IPython.display.clear_output()
+# val_performance['Multi step dense'] = multi_step_dense.evaluate(conv_window.val)
+# performance['Multi step dense'] = multi_step_dense.evaluate(conv_window.test, verbose=0)
+
+# conv_window.plot(multi_step_dense)
+# plt.show()
+
+# conv_model = tf.keras.Sequential([
+#     tf.keras.layers.Conv1D(filters=32,
+#                            kernel_size=(CONV_WIDTH,),
+#                            activation='relu'),
+#     tf.keras.layers.Dense(units=32, activation='relu'),
+#     tf.keras.layers.Dense(units=1),
+# ])
+
+# history = compile_and_fit(conv_model, conv_window)
+
+# IPython.display.clear_output()
+# val_performance['Conv'] = conv_model.evaluate(conv_window.val)
+# performance['Conv'] = conv_model.evaluate(conv_window.test, verbose=0)
+
+# LABEL_WIDTH = 24
+# INPUT_WIDTH = LABEL_WIDTH + (CONV_WIDTH - 1)
+# wide_conv_window = WindowGenerator(
+#     input_width=INPUT_WIDTH,
+#     label_width=LABEL_WIDTH,
+#     shift=1,
+#     label_columns=['dam'])
+
+# wide_conv_window.plot(conv_model)
+# plt.show()
+
+# lstm_model = tf.keras.models.Sequential([
+#     # Shape [batch, time, features] => [batch, time, lstm_units]
+#     tf.keras.layers.LSTM(32, return_sequences=True),
+#     # Shape => [batch, time, features]
+#     tf.keras.layers.Dense(units=1)
+# ])
+
+# history = compile_and_fit(lstm_model, wide_window)
+
+# IPython.display.clear_output()
+# val_performance['LSTM'] = lstm_model.evaluate(wide_window.val)
+# performance['LSTM'] = lstm_model.evaluate(wide_window.test, verbose=0)
+
+# wide_window.plot(lstm_model)
+# plt.show()
