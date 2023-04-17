@@ -5,7 +5,6 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-<<<<<<< master
 import seaborn as sns
 import IPython
 import IPython.display
@@ -13,20 +12,18 @@ import IPython.display
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 df = pd.read_csv("ml_data.csv")
-=======
 
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 df = pd.read_csv("AppliedStatisticsProject\ml_data.csv")
->>>>>>> master
+
 
 df["date"] = pd.to_datetime(df["date"]) # Converting into datetime format
 end_date = pd.to_datetime("2020-01-01") 
 df = df[df["date"] <= end_date] # Extracting the portion of data from 2018 to 2019 (inlcluded)
 date_time = pd.to_datetime(df.pop('date'), format='%Y.%m.%d %H:%M:%S')
 
-<<<<<<< master
 print(df.head())
 
 # Printing the price overtime
@@ -37,7 +34,6 @@ plot_features.plot
 plt.plot(plot_features)
 plt.show()
 print(df.describe().transpose())
-=======
 # print(df.head())
 
 # Printing the price overtime
@@ -48,7 +44,6 @@ print(df.describe().transpose())
 # plt.plot(plot_features)
 # plt.show()
 # print(df.describe().transpose())
->>>>>>> master
 
 # Emphasizing the periodicity of the date
 timestamp_s = date_time.map(pd.Timestamp.timestamp)
@@ -59,11 +54,11 @@ df['Day cos'] = np.cos(timestamp_s * (2 * np.pi / day))
 df['Year sin'] = np.sin(timestamp_s * (2 * np.pi / year))
 df['Year cos'] = np.cos(timestamp_s * (2 * np.pi / year))
 
-<<<<<<< master
+
 ## Checking that the periodicity is daily and yearly
-=======
+
 # Checking that the periodicity is daily and yearly
->>>>>>> master
+
 
 # fft = tf.signal.rfft(df['dam'])
 # f_per_dataset = np.arange(0, len(fft))
@@ -90,10 +85,9 @@ test_df = df[int(n*0.9):]
 
 num_features = df.shape[1]
 
-<<<<<<< master
+
 # Standardizing the features using only the training set
-=======
->>>>>>> master
+
 
 train_mean = train_df.mean()
 train_std = train_df.std()
@@ -102,7 +96,6 @@ train_df = (train_df - train_mean) / train_std
 val_df = (val_df - train_mean) / train_std
 test_df = (test_df - train_mean) / train_std
 
-<<<<<<< master
 ## Plotting the standardized variables, in this case we can observe that some features such as gas price, thermal and the imports have
 ## heavy tails  (some outliers are observed)
 
@@ -411,10 +404,10 @@ conv_window = WindowGenerator(
 
 # wide_window.plot(lstm_model)
 # plt.show()
-=======
+
 df_std = (df - train_mean) / train_std
 df_std = df_std.melt(var_name='Column', value_name='Normalized')
 plt.figure(figsize=(12, 6))
 ax = sns.violinplot(x='Column', y='Normalized', data=df_std)
 _ = ax.set_xticklabels(df.keys(), rotation=90)
->>>>>>> master
+
