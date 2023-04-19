@@ -66,7 +66,7 @@ h
 
 ## Split the dataset: we consider only data from 2018 and 2019
 
-data.18.19 <- data[which(data$date>=2019),]
+data.18.19 <- data[which(data$dates<2020),]
 
 summary(data.18.19)
 
@@ -104,7 +104,7 @@ load.data2.sd
 
 #covariate da togliere
 
-vector = c(1,2,3,4,5,6,7,8,9,10,11, 12, 13, 20, 21, 22, 23, 24, 25, 28) #tolte categoriche e ore 9
+vector = c(1,2,3,4,5,6,7,8,9,10,11, 12, 13, 20, 21, 22, 23, 24, 25, 26, 27, 28) #tolte categoriche e ore 9
 data2 <- data.18.19[, -vector]
 summary(data2)
 
@@ -264,3 +264,123 @@ shapiro.test(data.18.19[s1,2])
 shapiro.test(data1819.x)
 
 
+
+data.18.19 <- data[which(data$date<2020),]
+
+data.18.19.meandam <- data.18.19[,c(2,14)]
+summary(data.18.19.meandam)
+data.18.19.meandam.dam <- tapply(data.18.19.meandam$dam, rep(1:17520/24, each=24, length.out=17520), mean)
+data.18.19.meandam.month <- tapply(data.18.19.meandam$month, rep(1:17520/24, each=24, length.out=17520), mean)
+summary(data.18.19.meandam.month)
+dam <- data.18.19.meandam.dam
+month <- data.18.19.meandam.month
+df = data.frame(dam,month,row.names = c(1:730))
+
+
+inverno <- which( df$month==1 | df$month==2 | df$month==12)
+primavera <- which( df$month==3 | df$month==4 | df$month==5)
+estate <- which( df$month==6 | df$month==7 | df$month==8)
+autunno <- which( df$month==9 | df$month==10 | df$month==11)
+
+df[inverno,2] <- "inverno"
+df[estate,2] <- "estate"
+df[primavera,2] <- "primavera"
+df[autunno,2] <- "autunno"
+
+stagione <- factor(x=df[,2],c("inverno","estate","primavera","autunno"))
+stagione
+
+df[,2] <- stagione
+
+stagioni <- c("inverno","estate","primavera","autunno")
+
+Mediag  <- tapply(df$dam, df$month, mean)
+Sdg  <- tapply(df$dam, df$month, sd)
+ng <- tapply(df$dam, df$month,length)
+
+for (i in 1:4) {
+    s <- which(df$month==stagioni[i] & abs((df$dam - Mediag[i])/Sdg[i]) > 2.5)
+    if (length(s) > 0) {
+      df <- df[-s,]
+    }
+    
+}
+
+shapiro.test(df[inverno,1])
+shapiro.test(df[autunno,1])
+shapiro.test(df[primavera,1])
+shapiro.test(df[estate,1])
+
+bartlett.test(df$dam, df$month)
+
+fit <- aov(df$dam ~ df$month)
+summary(fit)
+
+n=730
+g=4
+ng <- tapply(df$dam,df$month,length)
+k <- g*(g-1)/2
+alpha= 0.05
+
+Mediag  <- tapply(df$dam, df$month, mean) # group-wise means
+SSres <- sum(residuals(fit)^2)
+S <- SSres/(n-g)
+
+# CI for all the differences
+ICrange=NULL
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    print(paste(stagione[i],"-",stagione[j]))        
+    print(as.numeric(c(Mediag[i]-Mediag[j] - qt(1-alpha/(2*k), n-g) * sqrt(S * ( 1/ng[i] + 1/ng[j])),
+                       Mediag[i]-Mediag[j] + qt(1-alpha/(2*k), n-g) * sqrt(S * ( 1/ng[i] + 1/ng[j])))))
+    ICrange=rbind(ICrange,as.numeric(c(Mediag[i]-Mediag[j] - qt(1-alpha/(2*k), n-g) * sqrt(S * (1/ng[i] + 1/ng[j])),
+                                       Mediag[i]-Mediag[j] + qt(1-alpha/(2*k), n-g) * sqrt(S * (1/ng[i] + 1/ng[j])))))
+  }}
+
+x11()
+par(mfrow=c(1,2))
+plot(df$month, df$dam, xlab='stagione', ylab='dam', col = rainbow(6), las=2)
+
+h <- 1
+plot(c(1,g*(g-1)/2),range(ICrange), pch='',xlab='pairs treat', ylab='Conf. Int. tau weight')
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    ind <- (i-1)*g-i*(i-1)/2+(j-i)
+    lines (c(h,h), c(ICrange[ind,1],ICrange[ind,2]), col='grey55'); 
+    points(h, Mediag[i]-Mediag[j], pch=16, col='grey55'); 
+    points(h, ICrange[ind,1], col=rainbow(6)[j], pch=16); 
+    points(h, ICrange[ind,2], col=rainbow(6)[i], pch=16); 
+    h <- h+1
+  }}
+abline(h=0)
+
+
+
+
+
+
+
+
+
+
+
+### regression
+
+data.18.19 <- data[which(data$date<2020),]
+
+attach(data.18.19)
+
+regression <- lm(dam ~ gas_price + Forecasted_load)
+regression
+
+summary(regression)
+
+coef(regression)
+vcov(regression)
+residuals(regression)
+fitted(regression)
+
+shapiro.test( regression$res[1:550] )
+
+
+detach(data.18.19)
