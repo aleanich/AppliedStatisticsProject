@@ -24,18 +24,34 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 
 #import the data
-data=pd.read_pickle('ml_data.pkl')
-data=data.astype(float)
-#select the year
-anno=19
-#fetch the data for a given year
-data=data[data.index.strftime('%y')==str(anno)]
+data=pd.read_csv('ml_data.csv')
+# data=data.astype(float)
+data["date"] = pd.to_datetime(data["date"]) # Converting into datetime format
+dam_bef = data["dam"].iloc[:-24]
+#print(dam_bef)
+dam_bef_first = dam_bef.iloc[0:24]
+#print(dam_bef_first)
+dam_bef=pd.concat([dam_bef_first,dam_bef],ignore_index=True,axis=0)
+data["dam_prev"] = dam_bef
+#print(data)
+#print(data["dam_prev"][3790:3824])
+start_date = pd.to_datetime("2018-01-01")
+end_date = pd.to_datetime("2021-12-31") 
+data = data[ data["date"] <= end_date] # Extracting the portion of data from 2018 to 2019 (included)
+data = data[ data["date"] >= start_date]
+date_time = pd.to_datetime(data.pop('date'), format='%Y.%m.%d %H:%M:%S')
+data = data.set_index(date_time)
+
+# #select the year
+# anno=19
+# #fetch the data for a given year
+# data=data[data.index.strftime('%y')==str(anno)]
 #compute the correlation between data  
 correlation=data.corr()
 #identify the features(note the first column (column 0 ) represrents the prices)
 features=data.columns[1:]
 #divide the dataset in train and split
-training_data,testing_data=train_test_split(data,test_size=0.2,random_state=0)
+training_data,testing_data=train_test_split(data,test_size=0.2)
 #create the features training matrix
 X_multi=np.matrix(training_data[features])
 #create the feature testing matrix
@@ -47,7 +63,7 @@ X_test_multi_standardized=StandardScaler().fit_transform(X_test_multi)
 Y_training=training_data.loc[:,'dam']
 Y_testing=testing_data.loc[:,'dam']
 # import the ML model
-r_f_r=GradientBoostingRegressor(loss='squared_error',n_estimators=1000,learning_rate=0.1,random_state=0,max_depth=5,min_samples_split=6,min_samples_leaf=1)
+r_f_r=GradientBoostingRegressor(loss='squared_error',n_estimators=100,learning_rate=0.05,max_depth=8,min_samples_split=12,min_samples_leaf=1)
 #fit the model
 r_f_r.fit(X_multi_standardized,Y_training)
 #predict the results of the test dataset with the trained model
@@ -58,26 +74,26 @@ mse=mean_squared_error(y_predicted,Y_testing)
 
 print(" The accuracy for the gradient boosting regressor is "+str(score*100)+' %\n'\
       " The MSE is "+str(mse)+"\n The RMSE is "+str(np.sqrt(mse)))
-# create three plots
-fig,dam_prediction=plt.subplots()
-dam_prediction.scatter(Y_testing,y_predicted,label="actual dam")
-dam_prediction.plot(np.linspace(0,100,100),np.linspace(0,100,100),color='red')
-#dam_prediction.scatter(testing_data.index,y_predicted,label='Random Forest')
-dam_prediction.set_title('Gradient boositng Features: '+str(features))
-dam_prediction.set_xlabel('Real value')
-dam_prediction.set_ylabel('Forecasted value')
+# # create three plots
+# fig,dam_prediction=plt.subplots()
+# dam_prediction.scatter(Y_testing,y_predicted,label="actual dam")
+# dam_prediction.plot(np.linspace(0,100,100),np.linspace(0,100,100),color='red')
+# #dam_prediction.scatter(testing_data.index,y_predicted,label='Random Forest')
+# dam_prediction.set_title('Gradient boositng Features: '+str(features))
+# dam_prediction.set_xlabel('Real value')
+# dam_prediction.set_ylabel('Forecasted value')
 
 
-fig,dam_prediction_10=plt.subplots()
-dam_prediction_10.scatter(testing_data.index[10:50],Y_testing[10:50],label="actual dam")
-dam_prediction_10.scatter(testing_data.index[10:50],y_predicted[10:50],label='Grandient boositg')
-dam_prediction_10.set_title('Random forest; Features: '+str(features))
+# fig,dam_prediction_10=plt.subplots()
+# dam_prediction_10.scatter(testing_data.index[10:50],Y_testing[10:50],label="actual dam")
+# dam_prediction_10.scatter(testing_data.index[10:50],y_predicted[10:50],label='Grandient boositg')
+# dam_prediction_10.set_title('Random forest; Features: '+str(features))
 
 
 fig,one_day=plt.subplots(figsize=(20,20))
 month=np.random.randint(1,13,1)[0]
 day=np.random.randint(1,31,1)[0]
-year=np.random.randint(2000+anno,2000+anno+1,1)[0]
+year=np.random.randint(2021,2023,1)[0]
 random_day=dt.datetime(year,month,day)
 random_data=data[data.index.strftime('%y-%m-%d')==random_day.strftime('%y-%m-%d')]
 random_data_standardized=StandardScaler().fit_transform(random_data.iloc[:,1:])
@@ -89,4 +105,3 @@ one_day.fill_between(random_data.index, y_predicted_random - np.sqrt(mse), y_pre
 one_day.legend(prop={'size':30})
 plt.setp(one_day,xticks=random_data.index, xticklabels=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24])
 plt.show()
-

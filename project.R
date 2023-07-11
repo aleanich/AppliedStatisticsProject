@@ -23,17 +23,48 @@ x11()
 p <- ggplot(data,aes(x=dates,y=dam)) ### what's happened???????
 p + geom_line()
 
+data.18.19 <- data[which(data$date<2020),]
+dates <- ymd_hms(data.18.19$date)
+data.18.19 = data.frame(dates, data.18.19[,2:30])
+
+data.18=data.18.19[1:8760,]
+x11()
+p <- ggplot(data.18,aes(x=dates,y=dam)) ### what's happened???????
+p + geom_line()
+
+
 # Visualizing other variables
 
-#Swiss_import
+#Swiss_import and export
 
 x11()
-q <- ggplot(data,aes(x=dates,y=Swiss_import))
-p + q + geom_line()
+q <- ggplot(data,aes(x=dates)) +  geom_line( aes(y=Swiss_import), color="blue") + geom_line( aes(y=Swiss_export),size = 1, color="green") + scale_y_continuous (name = "S_I",sec.axis = sec_axis(~.*1, name="S_E"))
+q 
+
+x11()
+q <- ggplot(data,aes(x=dates,y=Swiss_export))
+q + geom_line()
+
+#Swiss_import and dam
 
 x11()
 h <- ggplot(data, aes(x=dates)) +  geom_line( aes(y=dam), color="blue") + geom_line( aes(y=gas_price),size = 1, color="green") + scale_y_continuous (name = "dam",sec.axis = sec_axis(~.*1, name="Gas Price"))
 h
+
+#France_import and export
+
+x11()
+q <- ggplot(data,aes(x=dates,y=France_import))
+q + geom_line()
+
+x11()
+q <- ggplot(data,aes(x=dates,y=France_export))
+q + geom_line()
+
+x11()
+q <- ggplot(data,aes(x=dates)) +  geom_line( aes(y=France_import), color="blue") + geom_line( aes(y=France_export),size = 1, color="green") + scale_y_continuous (name = "S_I",sec.axis = sec_axis(~.*1, name="S_E"))
+q 
+
 
 # gas price
 
@@ -66,7 +97,9 @@ h
 
 ## Split the dataset: we consider only data from 2018 and 2019
 
-data.18.19 <- data[which(data$dates<2020),]
+data <- read.table('ml_data.csv',header = T, sep=",")
+
+data.18.19 <- data[which(data$date<2020),]
 
 summary(data.18.19)
 
@@ -159,10 +192,12 @@ p + geom_line()
 
 
 
+data.18.19 <- data[which(data$date<2020),]
+
 dam18 <- data.18.19[which(data.18.19$date<2019),2]
 dam19 <- data.18.19[which(data.18.19$date>=2019),2]
 
-shapiro.test(dam19[1:5000])
+#shapiro.test(dam19[1:5000])
 
 mean(dam18)
 mean(dam19)
@@ -172,8 +207,8 @@ sd(dam19)
 
 x11()
 par(mfrow=c(1,2))
-boxplot(dam18)
-boxplot(dam19)
+boxplot(dam18,col='gold',ylim=c(0,150))
+boxplot(dam19,col='gold',ylim=c(0,150))
 
 # groups are seasons: 1 winter, 2 spring, 3 summer, 4 autumn
 
@@ -354,6 +389,16 @@ for(i in 1:(g-1)) {
   }}
 abline(h=0)
 
+### Some plot in order to spot some relationships
+
+data1819.x <- bcPower(data.18.19[,30], 2)
+
+x11()
+plot(data.18.19$Forecasted_load,data.18.19$dam)
+
+
+x11()
+plot(data1819.x,data.18.19$dam,xlim=c(0,2500))
 
 
 
@@ -361,26 +406,112 @@ abline(h=0)
 
 
 
+### Linear Regression 
 
-
-
-### regression
-
+data <- read.table('ml_data.csv',header = T, sep=",")
 data.18.19 <- data[which(data$date<2020),]
 
-attach(data.18.19)
+cov <- c(2,11,12,14,15,16,17,18,19,20,30)
 
-regression <- lm(dam ~ gas_price + Forecasted_load)
+data.18.19 <- data.18.19[,cov]
+
+## Try different regression
+
+# - hours and month as categorical variables
+
+hours <- factor(x=data.18.19[,3],c(0:23))
+month <- factor(x=data.18.19[,4],c(1:12)) 
+
+data.18.19$hour <- hours
+data.18.19$month <- month
+
+regression <- lm(data.18.19$dam ~ data.18.19$gas_price + data.18.19$Forecasted_load + data.18.19$hour + data.18.19$geothermal10 + data.18.19$pv10 + data.18.19$hydro10 + data.18.19$self.consumption10 + data.18.19$thermal10 + data.18.19$wind10)
+regression
+summary(regression)
+
+x11()
+plot(regression$residuals)
+
+# - 24 different regressions: each one for every hour
+
+data0 <- data.18.19[which(data.18.19$hour==0),]
+regression0 <- lm(data0$dam ~ data0$gas_price + data0$Forecasted_load + data0$geothermal10 + data0$pv10 + data0$hydro10 + data0$self.consumption10 + data0$thermal10 + data0$wind10)
+summary(regression0)
+
+x11()
+plot(regression0$residuals)
+summary(regression0$residuals)
+
+data1 <- data.18.19[which(data.18.19$hour==1),]
+regression1 <- lm(data1$dam ~ data1$gas_price + data1$Forecasted_load + data1$geothermal10 + data1$pv10 + data1$hydro10 + data1$self.consumption10 + data1$thermal10 + data1$wind10)
+summary(regression1)
+
+x11()
+plot(regression1$residuals)
+
+data12 <- data.18.19[which(data.18.19$hour==12),]
+regression12 <- lm(data12$dam ~ data12$gas_price + data12$Forecasted_load + data12$geothermal10 + data12$pv10 + data12$hydro10 + data12$self.consumption10 + data12$thermal10 + data12$wind10)
+summary(regression12)
+
+x11()
+plot(regression12$residuals)
+
+# - trying a sort of recursive linear regression
+
+data1 <- data.18.19[which(data.18.19$hour==1),]
+data1$past_dam <- regression0$fitted.values
+
+regression1_rec <- lm(data1$dam ~ data1$gas_price + data1$Forecasted_load + data1$geothermal10 + data1$pv10 + data1$self.consumption10 + data1$past_dam)
+summary(regression1_rec)
+
+
+
+### Covariate trasformate
+
+data <- read.table('ml_data.csv',header = T, sep=",")
+data.18.19 <- data[1:17519,]
+data.18.19 <- data.18.19[,-1]
+
+
+#tolgo le covariate meno significative
+data.18.19<-data.18.19[,-c(2,3,4,5,6,7,8,9)]
+summary(data.18.19)
+
+#hydro, pv, self.consumption
+data.18.19$geothermal=(data.18.19$geothermal10+data.18.19$geothermal9)/2
+data.18.19$hydro=(data.18.19$hydro10+data.18.19$hydro9)/2
+data.18.19$pv=(data.18.19$pv10+data.18.19$pv9)/2
+data.18.19$self.consuption=(data.18.19$self.consumption9+data.18.19$self.consumption10)/2
+data.18.19<-data.18.19[,-c(6,7,8,9,10,11,12,13,14,15,16,17)]
+
+#pick e valley
+data.18.19$range=data.18.19$peak-data.18.19$valley
+data.18.19<-data.18.19[,-c(6,7)]
+data.18.19<-data.18.19[,-c(6)]
+
+hours <- factor(x=data.18.19[,3],c(0:23))
+month <- factor(x=data.18.19[,5],c(1:12)) 
+
+data.18.19$hour <- hours
+data.18.19$month <- month
+
+
+regression <- lm(data.18.19$dam ~ data.18.19$gas_price + data.18.19$Forecasted_load + data.18.19$hour + data.18.19$geothermal + data.18.19$pv + data.18.19$hydro + data.18.19$self.consuption + data.18.19$range)
 regression
 
 summary(regression)
 
-coef(regression)
-vcov(regression)
-residuals(regression)
-fitted(regression)
-
-shapiro.test( regression$res[1:550] )
+x11()
+plot(regression$residuals)
 
 
-detach(data.18.19)
+data0 <- data.18.19[which(data.18.19$hour==0),]
+regression0 <- lm(data0$dam ~ data0$gas_price + data0$Forecasted_load + data0$geothermal + data0$pv + data0$hydro + data0$self.consuption + data0$range)
+summary(regression0)
+
+data1 <- data.18.19[which(data.18.19$hour==1),]
+data1$past_dam <- regression0$fitted.values
+
+regression1 <- lm(data1$dam ~ data1$gas_price + data1$Forecasted_load + data1$geothermal + data1$pv + data1$hydro + data1$self.consuption + data1$range + data1$past_dam)
+summary(regression1)
+
